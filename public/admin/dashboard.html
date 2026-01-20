@@ -164,14 +164,19 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/admin/supabase-init.js"></script>
     <script>
         const gymId = localStorage.getItem('gymId');
-        const SUPABASE_URL = 'https://vyspmhrbgaxvmkaqrrfo.supabase.co';
-        const SUPABASE_ANON_KEY = 'YOUR_KEY';
-        const { createClient } = supabase;
-        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function loadDashboard() {
+            // Wait for Supabase to initialize
+            const sb = await initSupabase();
+            if (!sb) {
+                alert('Errore: impossibile connettersi al database');
+                return;
+            }
+
             // Carica nome palestra
             const { data: gym } = await sb.from('gyms').select('gym_name').eq('id', gymId).single();
             if (gym) document.getElementById('gymName').textContent = gym.gym_name;
