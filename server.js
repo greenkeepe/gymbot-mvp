@@ -9,11 +9,14 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
+// Root route - must be BEFORE static middleware to take priority
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
+
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Endpoint di debug per controllare la configurazione
 app.get('/debug', async (req, res) => {
