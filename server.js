@@ -15,6 +15,39 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Endpoint di debug per controllare la configurazione
+app.get('/debug', async (req, res) => {
+    const apiKey = process.env.GROQ_API_KEY;
+    const keyStatus = apiKey ? `Presente (Inizia con: ${apiKey.substring(0, 5)}...)` : 'MANCANTE';
+
+    let apiStatus = "Non testato";
+    let apiError = null;
+
+    if (apiKey) {
+        try {
+            // Test chiamata a Groq
+            const { Groq } = require("groq-sdk");
+            const groq = new Groq({ apiKey: apiKey });
+            await groq.chat.completions.create({
+                messages: [{ role: "user", content: "Test" }],
+                model: "llama3-70b-8192",
+            });
+            apiStatus = "✅ Connessione OK";
+        } catch (e) {
+            apiStatus = "❌ Errore Connessione";
+            apiError = e.message;
+        }
+    }
+
+    res.json({
+        env_vars: {
+            GROQ_API_KEY: keyStatus
+        },
+        api_connection: apiStatus,
+        error_details: apiError
+    });
+});
+
 app.post('/api/chat', async (req, res) => {
     const { message, userId } = req.body;
 
