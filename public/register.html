@@ -201,6 +201,12 @@
 
                     // Salva nel localStorage per comodità
                     localStorage.setItem('gymId', gym.id);
+                    localStorage.setItem('userEmail', document.getElementById('email').value);
+
+                    // Redirect to dashboard after 1.5 seconds
+                    setTimeout(() => {
+                        window.location.href = '/admin/dashboard.html';
+                    }, 1500);
                 } else {
                     const error = await res.json();
                     throw new Error(error.error || 'Errore sconosciuto');
