@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GymBot - Assistente AI per Palestre</title>
+    <title>GymBot AI - Assistente Virtuale per Palestre</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -16,17 +17,19 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #0a0a0a;
             color: #fff;
+            overflow-x: hidden;
         }
 
+        /* Hero Section */
         .hero {
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 40px 20px;
-            position: relative;
-            overflow: hidden;
         }
 
         .hero::before {
@@ -36,10 +39,10 @@
             height: 200%;
             background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
             background-size: 50px 50px;
-            animation: move 20s linear infinite;
+            animation: moveGrid 20s linear infinite;
         }
 
-        @keyframes move {
+        @keyframes moveGrid {
             0% {
                 transform: translate(0, 0);
             }
@@ -49,31 +52,48 @@
             }
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        .hero-content {
             position: relative;
             z-index: 1;
-        }
-
-        .hero-content {
             text-align: center;
+            max-width: 1200px;
         }
 
-        h1 {
-            font-size: 4em;
-            margin-bottom: 20px;
+        .hero h1 {
+            font-size: clamp(2.5em, 8vw, 5em);
             font-weight: 800;
+            margin-bottom: 20px;
             background: linear-gradient(to right, #fff, #f0f0f0);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            animation: fadeInUp 0.8s ease-out;
         }
 
-        .subtitle {
-            font-size: 1.5em;
+        .hero .subtitle {
+            font-size: clamp(1.2em, 3vw, 1.8em);
+            margin-bottom: 20px;
+            opacity: 0.95;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero .description {
+            font-size: clamp(1em, 2vw, 1.2em);
+            opacity: 0.85;
             margin-bottom: 40px;
-            opacity: 0.9;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .cta-buttons {
@@ -81,6 +101,7 @@
             gap: 20px;
             justify-content: center;
             flex-wrap: wrap;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
         }
 
         .btn {
@@ -92,17 +113,17 @@
             transition: all 0.3s;
             text-decoration: none;
             display: inline-block;
+            border: none;
         }
 
         .btn-primary {
             background: white;
             color: #667eea;
-            border: none;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255, 255, 255, 0.3);
         }
 
         .btn-secondary {
@@ -112,12 +133,31 @@
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
         }
 
+        /* Features Section */
         .features {
-            padding: 100px 20px;
+            padding: 120px 20px;
             background: #0a0a0a;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: clamp(2em, 5vw, 3.5em);
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: #aaa;
+            font-size: 1.3em;
+            margin-bottom: 60px;
         }
 
         .features-grid {
@@ -129,95 +169,127 @@
         }
 
         .feature-card {
-            background: #1a1a1a;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
             padding: 40px;
-            border-radius: 20px;
+            border-radius: 24px;
             border: 1px solid #333;
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-10px);
             border-color: #667eea;
-            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
         }
 
         .feature-icon {
-            font-size: 3em;
-            margin-bottom: 20px;
+            font-size: 3.5em;
+            margin-bottom: 24px;
+            display: block;
         }
 
         .feature-card h3 {
-            font-size: 1.5em;
-            margin-bottom: 15px;
+            font-size: 1.6em;
+            margin-bottom: 16px;
             color: #667eea;
         }
 
         .feature-card p {
-            color: #aaa;
-            line-height: 1.6;
+            color: #bbb;
+            line-height: 1.7;
+            font-size: 1.05em;
         }
 
+        /* Demo Section */
         .demo-section {
-            padding: 100px 20px;
+            padding: 120px 20px;
             background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
         }
 
         .demo-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            text-align: center;
-        }
-
-        .demo-container h2 {
-            font-size: 3em;
-            margin-bottom: 20px;
-            background: linear-gradient(to right, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
         .demo-video {
-            margin-top: 40px;
-            border-radius: 20px;
+            margin-top: 60px;
+            border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
         }
 
+        /* Integration Section */
         .integration {
-            padding: 100px 20px;
+            padding: 120px 20px;
             background: #0a0a0a;
         }
 
-        .integration h2 {
-            text-align: center;
-            font-size: 3em;
-            margin-bottom: 60px;
+        .code-steps {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .code-step {
+            background: #1a1a1a;
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+        }
+
+        .code-step:hover {
+            border-color: #667eea;
+            transform: translateX(10px);
+        }
+
+        .code-step h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
         }
 
         .code-block {
-            background: #1a1a1a;
-            padding: 30px;
+            background: #0a0a0a;
+            padding: 24px;
             border-radius: 12px;
             border: 1px solid #333;
-            max-width: 800px;
-            margin: 0 auto 40px;
             overflow-x: auto;
         }
 
         .code-block pre {
             color: #f8f8f2;
-            font-family: 'Fira Code', monospace;
+            font-family: 'Fira Code', 'Courier New', monospace;
             font-size: 14px;
+            line-height: 1.6;
         }
 
         .code-block code {
             color: #50fa7b;
         }
 
+        /* Footer */
         footer {
-            padding: 60px 20px;
+            padding: 80px 20px;
             background: #000;
             text-align: center;
             border-top: 1px solid #333;
@@ -226,122 +298,156 @@
         footer a {
             color: #667eea;
             text-decoration: none;
-            margin: 0 15px;
+            margin: 0 20px;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        footer a:hover {
+            color: #764ba2;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .cta-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
 
 <body>
     <section class="hero">
-        <div class="container">
-            <div class="hero-content">
-                <h1>🤖 GymBot AI</h1>
-                <p class="subtitle">L'assistente virtuale che trasforma la tua palestra</p>
-                <p style="opacity: 0.8; margin-bottom: 40px;">
-                    Automatizza le prenotazioni, rispondi 24/7 ai clienti e aumenta le iscrizioni con l'intelligenza
-                    artificiale
-                </p>
-                <div class="cta-buttons">
-                    <a href="/register.html" class="btn btn-primary">🚀 Inizia Gratis</a>
-                    <a href="#demo" class="btn btn-secondary">📺 Guarda la Demo</a>
-                </div>
+        <div class="hero-content">
+            <h1>🤖 GymBot AI</h1>
+            <p class="subtitle">L'Assistente Virtuale che Trasforma la Tua Palestra</p>
+            <p class="description">
+                Automatizza prenotazioni, rispondi 24/7 ai clienti e aumenta le iscrizioni<br>
+                con l'intelligenza artificiale più avanzata
+            </p>
+            <div class="cta-buttons">
+                <a href="/register.html" class="btn btn-primary">🚀 Inizia Gratis</a>
+                <a href="#demo" class="btn btn-secondary">📺 Guarda la Demo</a>
             </div>
         </div>
     </section>
 
     <section class="features">
+        <h2 class="section-title">Funzionalità Potenti</h2>
+        <p class="section-subtitle">Tutto ciò di cui hai bisogno per gestire la tua palestra</p>
+
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">💬</div>
+                <span class="feature-icon">💬</span>
                 <h3>Chatbot Intelligente</h3>
-                <p>Risposte automatiche 24/7 ai tuoi clienti. Gestisce domande su orari, prezzi, corsi e prenota prove
-                    gratuite.</p>
+                <p>Risposte automatiche 24/7. Gestisce domande su orari, prezzi, corsi e prenota prove gratuite in tempo
+                    reale.</p>
             </div>
+
             <div class="feature-card">
-                <div class="feature-icon">📅</div>
+                <span class="feature-icon">📅</span>
                 <h3>Calendario Real-Time</h3>
-                <p>Visualizza e gestisci tutte le prenotazioni in tempo reale. Sincronizzazione automatica senza
-                    refresh.</p>
+                <p>Visualizza e gestisci prenotazioni in tempo reale. Sincronizzazione automatica senza refresh della
+                    pagina.</p>
             </div>
+
             <div class="feature-card">
-                <div class="feature-icon">⚙️</div>
+                <span class="feature-icon">⚙️</span>
                 <h3>Pannello Admin Completo</h3>
-                <p>Configura orari, corsi, staff, trainer e prezzi. Personalizza il chatbot con il tuo tono di voce.</p>
+                <p>Configura orari, corsi, staff, trainer e prezzi. Personalizza il chatbot con il tuo tono di voce
+                    unico.</p>
             </div>
+
             <div class="feature-card">
-                <div class="feature-icon">🔒</div>
+                <span class="feature-icon">🔒</span>
                 <h3>Sicuro e Privato</h3>
-                <p>Autenticazione sicura, database isolato per ogni palestra. I tuoi dati sono protetti.</p>
+                <p>Autenticazione sicura con Supabase. Database isolato per ogni palestra. I tuoi dati sono protetti.
+                </p>
             </div>
+
             <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <h3>Analytics e Report</h3>
-                <p>Monitora prenotazioni, conversioni e revenue. Esporta report in PDF ed Excel.</p>
+                <span class="feature-icon">📊</span>
+                <h3>Analytics Avanzate</h3>
+                <p>Monitora prenotazioni, conversioni e revenue. Esporta report dettagliati in PDF ed Excel.</p>
             </div>
+
             <div class="feature-card">
-                <div class="feature-icon">🔗</div>
+                <span class="feature-icon">🔗</span>
                 <h3>Integrazione Facile</h3>
-                <p>3 righe di codice per integrare il chatbot sul tuo sito. Funziona anche su WhatsApp.</p>
+                <p>Solo 3 righe di codice per integrare il chatbot sul tuo sito. Funziona anche su WhatsApp Business.
+                </p>
             </div>
         </div>
     </section>
 
     <section class="demo-section" id="demo">
         <div class="demo-container">
-            <h2>Vedi GymBot in Azione</h2>
-            <p style="color: #aaa; font-size: 1.2em; margin-bottom: 40px;">
-                Guarda come i tuoi clienti interagiranno con l'assistente AI
+            <h2 class="section-title">Vedi GymBot in Azione</h2>
+            <p class="section-subtitle">
+                Scopri come i tuoi clienti interagiranno con l'assistente AI
             </p>
             <div class="demo-video">
-                <iframe src="/index.html" width="100%" height="600" style="border: none;" title="Demo GymBot">
+                <iframe src="/index.html" width="100%" height="700" style="border: none;" title="Demo GymBot Live">
                 </iframe>
             </div>
         </div>
     </section>
 
     <section class="integration">
-        <div class="container">
-            <h2>Integrazione Semplice</h2>
-            <p style="text-align: center; color: #aaa; margin-bottom: 60px; font-size: 1.2em;">
-                Aggiungi il chatbot al tuo sito in 3 semplici passaggi
-            </p>
+        <h2 class="section-title">Integrazione Semplicissima</h2>
+        <p class="section-subtitle">Aggiungi il chatbot al tuo sito in 3 semplici passaggi</p>
 
-            <div class="code-block">
-                <h3 style="margin-bottom: 20px; color: #667eea;">1. Aggiungi lo script</h3>
-                <pre><code>&lt;script src="https://gymbot-mvp.vercel.app/widget.js"&gt;&lt;/script&gt;</code></pre>
+        <div class="code-steps">
+            <div class="code-step">
+                <h3>1️⃣ Aggiungi lo Script</h3>
+                <div class="code-block">
+                    <pre><code>&lt;script src="https://gymbot-mvp.vercel.app/widget.js"&gt;&lt;/script&gt;</code></pre>
+                </div>
             </div>
 
-            <div class="code-block">
-                <h3 style="margin-bottom: 20px; color: #667eea;">2. Inizializza il widget</h3>
-                <pre><code>&lt;script&gt;
+            <div class="code-step">
+                <h3>2️⃣ Inizializza il Widget</h3>
+                <div class="code-block">
+                    <pre><code>&lt;script&gt;
   GymBot.init({
     gymId: 'IL_TUO_GYM_ID',
     position: 'bottom-right',
     theme: 'light'
   });
 &lt;/script&gt;</code></pre>
+                </div>
             </div>
 
-            <div class="code-block">
-                <h3 style="margin-bottom: 20px; color: #667eea;">3. Fatto! 🎉</h3>
-                <p style="color: #aaa;">Il chatbot apparirà automaticamente sul tuo sito. I clienti potranno chattare,
-                    prenotare e ricevere informazioni istantaneamente.</p>
+            <div class="code-step">
+                <h3>3️⃣ Fatto! 🎉</h3>
+                <p style="color: #aaa; margin-top: 10px;">
+                    Il chatbot apparirà automaticamente sul tuo sito. I clienti potranno chattare,
+                    prenotare e ricevere informazioni istantaneamente. Il bot si aggiorna in tempo reale
+                    con i dati della tua palestra.
+                </p>
             </div>
+        </div>
 
-            <div style="text-align: center; margin-top: 60px;">
-                <a href="/register.html" class="btn btn-primary">Inizia Ora Gratuitamente</a>
-            </div>
+        <div style="text-align: center; margin-top: 60px;">
+            <a href="/register.html" class="btn btn-primary" style="font-size: 20px; padding: 20px 50px;">
+                Inizia Ora Gratuitamente →
+            </a>
         </div>
     </section>
 
     <footer>
-        <p style="margin-bottom: 20px; color: #aaa;">
+        <p style="margin-bottom: 30px; color: #aaa; font-size: 1.1em;">
             © 2026 GymBot AI - Powered by Groq & Supabase
         </p>
         <div>
             <a href="/admin/dashboard.html">Dashboard Admin</a>
             <a href="/login.html">Login</a>
-            <a href="https://github.com/greenkeepe/gymbot-mvp">GitHub</a>
+            <a href="https://github.com/greenkeepe/gymbot-mvp" target="_blank">GitHub</a>
         </div>
     </footer>
 </body>
