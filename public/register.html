@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crea la Tua Palestra - GymBot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .result.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .gym-id {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🏋️ Crea la Tua Palestra</h1>
+        <p class="subtitle">Inserisci i dati della tua palestra per iniziare</p>
+
+        <form id="createGymForm">
+            <div class="form-group">
+                <label for="email">Email Proprietario *</label>
+                <input type="email" id="email" required placeholder="tua@email.com">
+            </div>
+
+            <div class="form-group">
+                <label for="gymName">Nome Palestra *</label>
+                <input type="text" id="gymName" required placeholder="Es: FitZone Milano">
+            </div>
+
+            <div class="form-group">
+                <label for="address">Indirizzo</label>
+                <input type="text" id="address" placeholder="Via Roma 123, Milano">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Telefono</label>
+                <input type="tel" id="phone" placeholder="+39 02 1234567">
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">🚀 Crea Palestra</button>
+        </form>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('createGymForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.getElementById('submitBtn');
+            const result = document.getElementById('result');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Creazione in corso...';
+            result.style.display = 'none';
+
+            const data = {
+                owner_email: document.getElementById('email').value,
+                gym_name: document.getElementById('gymName').value,
+                address: document.getElementById('address').value,
+                phone: document.getElementById('phone').value
+            };
+
+            try {
+                const res = await fetch('https://gymbot-mvp.vercel.app/api/gyms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    const gym = await res.json();
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <strong>✅ Palestra creata con successo!</strong>
+                        <div class="gym-id">
+                            <strong>ID Palestra:</strong><br>
+                            ${gym.id}
+                        </div>
+                        <p style="margin-top: 10px;">
+                            <strong>IMPORTANTE:</strong> Salva questo ID! Ti servirà per accedere al pannello admin.
+                        </p>
+                        <p style="margin-top: 10px;">
+                            <a href="https://gymbot-mvp.vercel.app/admin/settings.html" style="color: #667eea; font-weight: 600;">
+                                → Vai al Pannello Admin
+                            </a>
+                        </p>
+                    `;
+                    result.style.display = 'block';
+
+                    // Salva nel localStorage per comodità
+                    localStorage.setItem('gymId', gym.id);
+                } else {
+                    const error = await res.json();
+                    throw new Error(error.error || 'Errore sconosciuto');
+                }
+            } catch (err) {
+                result.className = 'result error';
+                result.innerHTML = `<strong>❌ Errore:</strong> ${err.message}`;
+                result.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 Crea Palestra';
+            }
+        });
+    </script>
+</body>
+
+</html>
