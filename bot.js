@@ -24,7 +24,7 @@ async function replyToMessage(userId, userMessage) {
     try {
         const completion = await groq.chat.completions.create({
             messages: chatHistory[userId],
-            model: "llama3-70b-8192", // Modello molto potente e veloce
+            model: "llama-3.3-70b-versatile", // Modello attivo e potente
             temperature: 0.7,
             max_tokens: 1024,
         });

@@ -30,7 +30,7 @@ app.get('/debug', async (req, res) => {
             const groq = new Groq({ apiKey: apiKey });
             await groq.chat.completions.create({
                 messages: [{ role: "user", content: "Test" }],
-                model: "llama3-70b-8192",
+                model: "llama-3.3-70b-versatile",
             });
             apiStatus = "✅ Connessione OK";
         } catch (e) {
