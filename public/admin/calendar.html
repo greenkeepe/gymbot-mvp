@@ -156,14 +156,15 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/admin/supabase-init.js"></script>
     <script>
         const gymId = localStorage.getItem('gymId');
-        const SUPABASE_URL = 'https://vyspmhrbgaxvmkaqrrfo.supabase.co';
-        const SUPABASE_ANON_KEY = 'YOUR_KEY';
-        const { createClient } = supabase;
-        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function loadCalendar() {
+            const sb = await initSupabase();
+            if (!sb) return;
+
             const { data: bookings } = await sb
                 .from('bookings')
                 .select('*')
