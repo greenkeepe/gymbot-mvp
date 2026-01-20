@@ -74,7 +74,7 @@ app.get('/api/config', (req, res) => {
 });
 
 app.post('/api/chat', async (req, res) => {
-    const { message, userId } = req.body;
+    const { message, userId, gymId } = req.body;
 
     if (!message) {
         return res.status(400).json({ error: 'Message is required' });
@@ -84,9 +84,10 @@ app.post('/api/chat', async (req, res) => {
     const uid = userId || 'web-user';
 
     try {
-        const response = await replyToMessage(uid, message);
+        const response = await replyToMessage(uid, message, gymId);
         res.json({ reply: response });
     } catch (error) {
+        console.error("Chat Error:", error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

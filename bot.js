@@ -13,12 +13,9 @@ const supabase = createClient(
     process.env.SUPABASE_ANON_KEY || ''
 );
 
-// Mantiene la cronologia e lo stato delle prenotazioni
-const chatHistory = {};
-const bookingState = {};
-
 // Carica i dati della palestra
 async function loadGymData(gymId) {
+    if (!gymId) return null;
     const { data: gym } = await supabase
         .from('gyms')
         .select('*')
@@ -26,6 +23,51 @@ async function loadGymData(gymId) {
         .single();
 
     return gym;
+}
+
+// Gestione Sessione Persistente
+async function getSession(userId, gymId) {
+    const { data: session, error } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+    if (error && error.code === 'PGRST116') {
+        // Sessione non trovata, creala
+        const newSession = {
+            user_id: userId,
+            gym_id: gymId,
+            state: { step: 'none' },
+            history: []
+        };
+        const { data } = await supabase
+            .from('chat_sessions')
+            .insert([newSession])
+            .select()
+            .single();
+        return data;
+    }
+
+    // Aggiorna gymId se è cambiato o è nuovo
+    if (gymId && session.gym_id !== gymId) {
+        const { data } = await supabase
+            .from('chat_sessions')
+            .update({ gym_id: gymId })
+            .eq('user_id', userId)
+            .select()
+            .single();
+        return data;
+    }
+
+    return session;
+}
+
+async function updateSession(userId, updates) {
+    await supabase
+        .from('chat_sessions')
+        .update(updates)
+        .eq('user_id', userId);
 }
 
 // Controlla disponibilità
@@ -62,7 +104,15 @@ async function createBooking(gymId, customerName, customerPhone, customerEmail, 
 }
 
 async function replyToMessage(userId, userMessage, gymId = null) {
-    // Carica dati palestra se fornito gymId
+    console.log(`[Bot] Messaggio da ${userId} per palestra ${gymId}: "${userMessage}"`);
+
+    // 1. Carica o crea sessione persistente
+    const session = await getSession(userId, gymId);
+    let state = session.state || { step: 'none' };
+    let history = session.history || [];
+
+    // 2. Carica dati palestra per contestualizzare
+    const targetGymId = gymId || session.gym_id;
     let gymData = null;
     let systemPrompt = `Sei un assistente virtuale AI per palestre. Sei cordiale, professionale e aiuti i clienti con:
 - Informazioni su orari, prezzi e corsi
@@ -71,8 +121,8 @@ async function replyToMessage(userId, userMessage, gymId = null) {
 
 Rispondi sempre in italiano in modo chiaro e conciso.`;
 
-    if (gymId) {
-        gymData = await loadGymData(gymId);
+    if (targetGymId) {
+        gymData = await loadGymData(targetGymId);
         if (gymData) {
             systemPrompt = `Sei l'assistente virtuale di ${gymData.gym_name}.
 
@@ -92,62 +142,55 @@ ${gymData.pricing ? `
 - Prova: €${gymData.pricing.trial}
 ` : 'Non configurati'}
 
-TONO: ${gymData.chatbot_tone || 'Professionale e cordiale'}
-
-Quando un cliente vuole prenotare, chiedi le informazioni una alla volta in modo naturale.`;
+Quando un cliente vuole prenotare, chiedi le informazioni una alla volta in modo naturale. SEGUI RIGIDAMENTE IL FLUSSO DI PRENOTAZIONE SE ATTIVO.`;
         }
     }
 
-    // Inizializza cronologia se nuovo utente
-    if (!chatHistory[userId]) {
-        chatHistory[userId] = [
-            { role: "system", content: systemPrompt }
-        ];
+    // Inizializza history se vuota
+    if (history.length === 0) {
+        history.push({ role: "system", content: systemPrompt });
     }
 
-    // Gestione stato prenotazione
-    if (!bookingState[userId]) {
-        bookingState[userId] = { step: 'none' };
-    }
+    // 3. Gestione FLUSSO PRENOTAZIONE (State Machine)
+    let responseText = "";
 
-    const state = bookingState[userId];
-
-    // Controlla se l'utente vuole prenotare
+    // Trigger iniziale
     if (userMessage.toLowerCase().match(/prenota|prenotare|prova|provare|appuntamento/i) && state.step === 'none') {
         state.step = 'ask_name';
-        return "Perfetto! Sarò felice di aiutarti a prenotare. Come ti chiami?";
+        responseText = "Perfetto! Sarò felice di aiutarti a prenotare una prova gratuita. Come ti chiami?";
+
+        await updateSession(userId, { state, history });
+        return responseText;
     }
 
-    // Gestione flusso prenotazione
-    if (state.step !== 'none' && gymId) {
+    // Passaggi successivi
+    if (state.step !== 'none' && targetGymId) {
         if (state.step === 'ask_name') {
             state.name = userMessage;
             state.step = 'ask_email';
-            return `Piacere ${state.name}! Qual è la tua email?`;
+            responseText = `Piacere ${state.name}! Qual è la tua email per la conferma?`;
         }
-
-        if (state.step === 'ask_email') {
+        else if (state.step === 'ask_email') {
             const emailMatch = userMessage.match(/[\w\.-]+@[\w\.-]+\.\w+/);
             if (!emailMatch) {
-                return "Mi serve un'email valida per confermare la prenotazione. Puoi riprovare?";
+                responseText = "Scusa, non sembra un'email valida. Puoi riscriverla correttamente?";
+            } else {
+                state.email = emailMatch[0];
+                state.step = 'ask_phone';
+                responseText = "Ottimo! Il tuo numero di telefono?";
             }
-            state.email = emailMatch[0];
-            state.step = 'ask_phone';
-            return "Perfetto! E il tuo numero di telefono?";
         }
-
-        if (state.step === 'ask_phone') {
+        else if (state.step === 'ask_phone') {
             const phoneMatch = userMessage.match(/[\d\s\+\-\(\)]{10,}/);
             if (!phoneMatch) {
-                return "Mi serve un numero di telefono valido. Puoi riprovare?";
+                responseText = "Mi serve un numero di telefono valido (almeno 10 cifre). Riprova?";
+            } else {
+                state.phone = phoneMatch[0].replace(/\s/g, '');
+                state.step = 'ask_date';
+                responseText = "Quando vorresti venire? (es: domani, 25/01/2026)";
             }
-            state.phone = phoneMatch[0].replace(/\s/g, '');
-            state.step = 'ask_date';
-            return "Quando vorresti venire? (es: domani, lunedì, 22/01/2026)";
         }
-
-        if (state.step === 'ask_date') {
-            // Parsing semplificato della data
+        else if (state.step === 'ask_date') {
             let date;
             if (userMessage.toLowerCase().includes('domani')) {
                 const tomorrow = new Date();
@@ -156,73 +199,77 @@ Quando un cliente vuole prenotare, chiedi le informazioni una alla volta in modo
             } else if (userMessage.toLowerCase().includes('oggi')) {
                 date = new Date().toISOString().split('T')[0];
             } else {
-                // Prova a parsare formato DD/MM/YYYY
                 const dateMatch = userMessage.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
                 if (dateMatch) {
                     date = `${dateMatch[3]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`;
                 } else {
-                    return "Non ho capito la data. Puoi scriverla in formato GG/MM/AAAA? (es: 22/01/2026)";
+                    responseText = "Non ho capito la data. Puoi scriverla in formato GG/MM/AAAA? (es: 22/01/2026)";
+                    await updateSession(userId, { state });
+                    return responseText;
                 }
             }
             state.date = date;
             state.step = 'ask_time';
-            return "A che ora preferisci? (es: 10:00, 15:30)";
+            responseText = "A che ora preferisci? (es: 10:00, 15:30)";
         }
-
-        if (state.step === 'ask_time') {
+        else if (state.step === 'ask_time') {
             const timeMatch = userMessage.match(/(\d{1,2}):?(\d{2})?/);
             if (!timeMatch) {
-                return "Non ho capito l'ora. Puoi scriverla in formato HH:MM? (es: 10:00)";
-            }
-            const hours = timeMatch[1].padStart(2, '0');
-            const minutes = (timeMatch[2] || '00').padStart(2, '0');
-            state.time = `${hours}:${minutes}`;
+                responseText = "Non ho capito l'ora. Puoi scriverla in formato HH:MM? (es: 10:00)";
+            } else {
+                const hours = timeMatch[1].padStart(2, '0');
+                const minutes = (timeMatch[2] || '00').padStart(2, '0');
+                state.time = `${hours}:${minutes}`;
 
-            // Controlla disponibilità e crea prenotazione
-            try {
-                const available = await checkAvailability(gymId, state.date, state.time);
-                if (available) {
-                    await createBooking(gymId, state.name, state.phone, state.email, state.date, state.time);
-                    const response = `✅ Prenotazione confermata!
+                try {
+                    const available = await checkAvailability(targetGymId, state.date, state.time);
+                    if (available) {
+                        await createBooking(targetGymId, state.name, state.phone, state.email, state.date, state.time);
+                        responseText = `✅ Prenotazione confermata per ${state.name}!
 
 📅 Data: ${state.date}
 🕐 Ora: ${state.time}
-👤 Nome: ${state.name}
-📧 Email: ${state.email}
-📞 Telefono: ${state.phone}
+📍 Palestra: ${gymData ? gymData.gym_name : 'La nostra sede'}
 
-Ti aspettiamo! Riceverai una conferma via email.`;
-
-                    // Reset stato
-                    bookingState[userId] = { step: 'none' };
-                    return response;
-                } else {
-                    state.step = 'ask_time';
-                    return `❌ Spiacente, l'orario ${state.time} del ${state.date} non è disponibile. Puoi scegliere un altro orario?`;
+Ti aspettiamo!`;
+                        state = { step: 'none' }; // Reset
+                    } else {
+                        responseText = `Spiacente, l'orario ${state.time} del ${state.date} è già occupato. Ne preferiresti un altro?`;
+                        state.step = 'ask_time';
+                    }
+                } catch (error) {
+                    console.error('Errore booking:', error);
+                    responseText = "C'è stato un errore tecnico nel salvare la prenotazione. Contattaci al telefono!";
+                    state = { step: 'none' };
                 }
-            } catch (error) {
-                console.error('Errore creazione prenotazione:', error);
-                bookingState[userId] = { step: 'none' };
-                return "Mi dispiace, c'è stato un errore nel salvare la prenotazione. Riprova o contattaci direttamente.";
             }
         }
+
+        await updateSession(userId, { state, history });
+        return responseText;
     }
 
-    // Conversazione normale con AI
-    chatHistory[userId].push({ role: "user", content: userMessage });
+    // 4. Conversazione normale con AI (Se non siamo in un flusso di prenotazione)
+    history.push({ role: "user", content: userMessage });
 
     try {
         const completion = await groq.chat.completions.create({
-            messages: chatHistory[userId],
+            messages: history,
             model: "llama-3.3-70b-versatile",
             temperature: 0.7,
             max_tokens: 1024,
         });
 
-        const botResponse = completion.choices[0]?.message?.content || "Non so cosa rispondere.";
-        chatHistory[userId].push({ role: "assistant", content: botResponse });
+        responseText = completion.choices[0]?.message?.content || "Non so cosa rispondere.";
+        history.push({ role: "assistant", content: responseText });
 
-        return botResponse;
+        // Mantieni history corta
+        if (history.length > 20) {
+            history = [history[0], ...history.slice(-10)];
+        }
+
+        await updateSession(userId, { state, history });
+        return responseText;
     } catch (error) {
         console.error("Errore Groq:", error);
         return "Scusami, ho un problema tecnico momentaneo. Riprova tra poco!";
