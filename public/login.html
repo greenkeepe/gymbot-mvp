@@ -153,11 +153,24 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://vyspmhrbgaxvmkaqrrfo.supabase.co';
-        const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'; // Verrà sostituito con variabile d'ambiente
+        let sb;
 
-        const { createClient } = supabase;
-        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Load Supabase config and initialize
+        async function initSupabase() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+
+                const { createClient } = supabase;
+                sb = createClient(config.supabaseUrl, config.supabaseAnonKey);
+                return sb;
+            } catch (error) {
+                console.error('Failed to load config:', error);
+                document.getElementById('errorMsg').textContent = '❌ Errore di configurazione. Riprova.';
+                document.getElementById('errorMsg').style.display = 'block';
+                return null;
+            }
+        }
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -173,6 +186,12 @@
             const password = document.getElementById('password').value;
 
             try {
+                // Initialize Supabase if not already done
+                if (!sb) {
+                    sb = await initSupabase();
+                    if (!sb) throw new Error('Impossibile connettersi al database');
+                }
+
                 const { data, error } = await sb.auth.signInWithPassword({
                     email: email,
                     password: password
@@ -202,10 +221,14 @@
             }
         });
 
-        // Controlla se già loggato
-        sb.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
-                window.location.href = '/admin/dashboard.html';
+        // Initialize Supabase and check if already logged in
+        initSupabase().then((client) => {
+            if (client) {
+                client.auth.getSession().then(({ data: { session } }) => {
+                    if (session) {
+                        window.location.href = '/admin/dashboard.html';
+                    }
+                });
             }
         });
     </script>
