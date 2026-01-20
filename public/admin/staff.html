@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff & Trainer - GymBot Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: #1a1a1a;
+            color: white;
+            padding: 30px 0;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .logo {
+            padding: 0 30px 30px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: 1.5em;
+            color: #667eea;
+        }
+
+        .nav-item {
+            padding: 15px 30px;
+            color: #aaa;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .staff-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .staff-card {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .staff-card h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .staff-card .role {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 12px;
+        }
+
+        .staff-card p {
+            color: #666;
+            margin-bottom: 6px;
+            font-size: 0.9em;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <h1>🤖 GymBot</h1>
+        </div>
+        <a href="dashboard.html" class="nav-item">📊 Dashboard</a>
+        <a href="settings.html" class="nav-item">⚙️ Impostazioni</a>
+        <a href="courses.html" class="nav-item">🏋️ Corsi</a>
+        <a href="staff.html" class="nav-item active">👥 Staff & Trainer</a>
+        <a href="pricing.html" class="nav-item">💰 Prezzi</a>
+        <a href="calendar.html" class="nav-item">📅 Calendario</a>
+        <a href="bookings.html" class="nav-item">📋 Prenotazioni</a>
+        <a href="chatbot.html" class="nav-item">🤖 Chatbot</a>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2>Gestione Staff & Trainer</h2>
+            <button class="btn" onclick="openModal()">+ Aggiungi Persona</button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('staff')">👔 Staff</div>
+            <div class="tab" onclick="switchTab('trainers')">💪 Trainer</div>
+        </div>
+
+        <div class="staff-grid" id="peopleList"></div>
+    </div>
+
+    <div class="modal" id="personModal">
+        <div class="modal-content">
+            <h2>Nuova Persona</h2>
+            <form id="personForm">
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="personType">
+                        <option value="staff">Staff</option>
+                        <option value="trainer">Trainer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="personName" required>
+                </div>
+                <div class="form-group">
+                    <label>Ruolo / Specializzazione</label>
+                    <input type="text" id="personRole" placeholder="Es: Receptionist, Personal Trainer">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="personEmail">
+                </div>
+                <div class="form-group">
+                    <label>Telefono</label>
+                    <input type="tel" id="personPhone">
+                </div>
+                <div class="form-group" id="bioGroup" style="display: none;">
+                    <label>Bio</label>
+                    <textarea id="personBio" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn">Salva</button>
+                <button type="button" class="btn" onclick="closeModal()" style="background: #ccc;">Annulla</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const gymId = localStorage.getItem('gymId');
+        const SUPABASE_URL = 'https://vyspmhrbgaxvmkaqrrfo.supabase.co';
+        const SUPABASE_ANON_KEY = 'YOUR_KEY';
+        const { createClient } = supabase;
+        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentTab = 'staff';
+
+        async function loadPeople() {
+            const { data: gym } = await sb.from('gyms').select('staff, trainers').eq('id', gymId).single();
+            const people = currentTab === 'staff' ? (gym?.staff || []) : (gym?.trainers || []);
+
+            document.getElementById('peopleList').innerHTML = people.map(p => `
+                <div class="staff-card">
+                    <h3>${p.name}</h3>
+                    <div class="role">${p.role || p.specialization || ''}</div>
+                    ${p.email ? `<p>📧 ${p.email}</p>` : ''}
+                    ${p.phone ? `<p>📞 ${p.phone}</p>` : ''}
+                    ${p.bio ? `<p style="margin-top: 12px; font-style: italic;">${p.bio}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            loadPeople();
+        }
+
+        function openModal() {
+            document.getElementById('personModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('personModal').style.display = 'none';
+            document.getElementById('personForm').reset();
+        }
+
+        document.getElementById('personType').addEventListener('change', (e) => {
+            document.getElementById('bioGroup').style.display = e.target.value === 'trainer' ? 'block' : 'none';
+        });
+
+        document.getElementById('personForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const type = document.getElementById('personType').value;
+            const { data: gym } = await sb.from('gyms').select('staff, trainers').eq('id', gymId).single();
+
+            const newPerson = {
+                id: Date.now(),
+                name: document.getElementById('personName').value,
+                [type === 'staff' ? 'role' : 'specialization']: document.getElementById('personRole').value,
+                email: document.getElementById('personEmail').value,
+                phone: document.getElementById('personPhone').value
+            };
+
+            if (type === 'trainer') {
+                newPerson.bio = document.getElementById('personBio').value;
+            }
+
+            const list = type === 'staff' ? (gym?.staff || []) : (gym?.trainers || []);
+            list.push(newPerson);
+
+            await sb.from('gyms').update({ [type]: list }).eq('id', gymId);
+            closeModal();
+            loadPeople();
+        });
+
+        loadPeople();
+    </script>
+</body>
+
+</html>
