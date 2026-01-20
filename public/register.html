@@ -154,7 +154,28 @@
         <div class="result" id="result"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        let sb;
+
+        // Load Supabase config and initialize
+        async function initSupabase() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+
+                const { createClient } = supabase;
+                sb = createClient(config.supabaseUrl, config.supabaseAnonKey);
+                return sb;
+            } catch (error) {
+                console.error('Failed to load config:', error);
+                document.getElementById('result').className = 'result error';
+                document.getElementById('result').textContent = '❌ Errore di configurazione. Riprova.';
+                document.getElementById('result').style.display = 'block';
+                return null;
+            }
+        }
+
         document.getElementById('createGymForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -165,18 +186,39 @@
             btn.textContent = '⏳ Creazione in corso...';
             result.style.display = 'none';
 
-            const data = {
-                owner_email: document.getElementById('email').value,
-                gym_name: document.getElementById('gymName').value,
-                address: document.getElementById('address').value,
-                phone: document.getElementById('phone').value
-            };
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const gymName = document.getElementById('gymName').value;
+            const address = document.getElementById('address').value;
+            const phone = document.getElementById('phone').value;
 
             try {
-                const res = await fetch('https://gymbot-mvp.vercel.app/api/gyms', {
+                // Initialize Supabase if not already done
+                if (!sb) {
+                    sb = await initSupabase();
+                    if (!sb) throw new Error('Impossibile connettersi al database');
+                }
+
+                // 1. Create Auth Account
+                const { data: authData, error: authError } = await sb.auth.signUp({
+                    email: email,
+                    password: password
+                });
+
+                if (authError) throw authError;
+
+                // 2. Create Gym in Database
+                const gymData = {
+                    owner_email: email,
+                    gym_name: gymName,
+                    address: address,
+                    phone: phone
+                };
+
+                const res = await fetch('/api/gyms', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(gymData)
                 });
 
                 if (res.ok) {
@@ -189,27 +231,25 @@
                             ${gym.id}
                         </div>
                         <p style="margin-top: 10px;">
-                            <strong>IMPORTANTE:</strong> Salva questo ID! Ti servirà per accedere al pannello admin.
+                            <strong>Account creato:</strong> ${email}
                         </p>
                         <p style="margin-top: 10px;">
-                            <a href="https://gymbot-mvp.vercel.app/admin/settings.html" style="color: #667eea; font-weight: 600;">
-                                → Vai al Pannello Admin
-                            </a>
+                            Redirect al dashboard in corso...
                         </p>
                     `;
                     result.style.display = 'block';
 
                     // Salva nel localStorage per comodità
                     localStorage.setItem('gymId', gym.id);
-                    localStorage.setItem('userEmail', document.getElementById('email').value);
+                    localStorage.setItem('userEmail', email);
 
                     // Redirect to dashboard after 1.5 seconds
                     setTimeout(() => {
                         window.location.href = '/admin/dashboard.html';
                     }, 1500);
                 } else {
-                    const error = await res.json();
-                    throw new Error(error.error || 'Errore sconosciuto');
+                    const errorJson = await res.json();
+                    throw new Error(errorJson.error || 'Errore durante la creazione della palestra');
                 }
             } catch (err) {
                 result.className = 'result error';
@@ -220,6 +260,9 @@
                 btn.textContent = '🚀 Crea Palestra';
             }
         });
+
+        // Initialize on load
+        initSupabase();
     </script>
 </body>
 
