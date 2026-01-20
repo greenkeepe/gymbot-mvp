@@ -1,0 +1,14 @@
+# Node modules
+node_modules/
+npm-debug.log
+
+# Environment variables
+.env
+
+# Firebase
+firebase-debug.log
+.firebase/
+
+# OS specific
+.DS_Store
+Thumbs.db
