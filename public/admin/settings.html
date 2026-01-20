@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymBot Admin - Impostazioni</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .success {
+            background: #10b981;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .nav {
+            margin-bottom: 30px;
+        }
+
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 600;
+        }
+
+        .nav a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="settings.html">⚙️ Impostazioni</a>
+            <a href="chatbot.html">🤖 Chatbot</a>
+            <a href="bookings.html">📅 Prenotazioni</a>
+            <a href="/">💬 Chat</a>
+        </div>
+
+        <h1>⚙️ Impostazioni Palestra</h1>
+        <p class="subtitle">Configura i dettagli della tua palestra</p>
+
+        <div class="success" id="successMsg">✅ Salvato con successo!</div>
+
+        <form id="settingsForm">
+            <div class="form-group">
+                <label for="gymName">Nome Palestra *</label>
+                <input type="text" id="gymName" required placeholder="Es: FitZone Milano">
+            </div>
+
+            <div class="form-group">
+                <label for="address">Indirizzo</label>
+                <input type="text" id="address" placeholder="Via Roma 123, Milano">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Telefono</label>
+                <input type="tel" id="phone" placeholder="+39 02 1234567">
+            </div>
+
+            <div class="form-group">
+                <label for="trialDuration">Durata Prova Gratuita (minuti)</label>
+                <input type="number" id="trialDuration" value="60" min="30" max="120">
+            </div>
+
+            <button type="submit" class="btn">💾 Salva Impostazioni</button>
+        </form>
+    </div>
+
+    <script>
+        const gymId = localStorage.getItem('gymId') || 'demo-gym-id';
+
+        // Carica dati esistenti
+        async function loadSettings() {
+            try {
+                const res = await fetch(`/api/gyms/${gymId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('gymName').value = data.gym_name || '';
+                    document.getElementById('address').value = data.address || '';
+                    document.getElementById('phone').value = data.phone || '';
+                    document.getElementById('trialDuration').value = data.trial_duration || 60;
+                }
+            } catch (err) {
+                console.error('Errore caricamento:', err);
+            }
+        }
+
+        // Salva impostazioni
+        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                gym_name: document.getElementById('gymName').value,
+                address: document.getElementById('address').value,
+                phone: document.getElementById('phone').value,
+                trial_duration: parseInt(document.getElementById('trialDuration').value)
+            };
+
+            try {
+                const res = await fetch(`/api/gyms/${gymId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    document.getElementById('successMsg').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('successMsg').style.display = 'none';
+                    }, 3000);
+                }
+            } catch (err) {
+                alert('Errore durante il salvataggio');
+            }
+        });
+
+        loadSettings();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymBot Admin - Personalizza Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.8em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .preview {
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .chat-bubble {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav {
+            grid-column: 1 / -1;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 0;
+        }
+
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="panel nav">
+            <a href="settings.html">⚙️ Impostazioni</a>
+            <a href="chatbot.html">🤖 Chatbot</a>
+            <a href="bookings.html">📅 Prenotazioni</a>
+            <a href="/">💬 Chat</a>
+        </div>
+
+        <div class="panel">
+            <h1>🤖 Personalizza Chatbot</h1>
+            <p class="subtitle">Configura il tono e i messaggi del tuo assistente</p>
+
+            <form id="chatbotForm">
+                <div class="form-group">
+                    <label for="greeting">Messaggio di Benvenuto</label>
+                    <textarea id="greeting" placeholder="Ciao! 👋 Benvenuto..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="tone">Tono del Bot</label>
+                    <select id="tone">
+                        <option value="amichevole">Amichevole</option>
+                        <option value="formale">Formale</option>
+                        <option value="sportivo">Sportivo/Motivazionale</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn">💾 Salva Personalizzazione</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h1>👁️ Anteprima</h1>
+            <p class="subtitle">Ecco come vedrà il bot il tuo cliente</p>
+
+            <div class="preview">
+                <div class="chat-bubble" id="previewBubble">
+                    Ciao! 👋 Benvenuto in palestra. Sono il tuo assistente virtuale. Come posso aiutarti oggi?
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gymId = localStorage.getItem('gymId') || 'demo-gym-id';
+
+        // Aggiorna anteprima in tempo reale
+        document.getElementById('greeting').addEventListener('input', (e) => {
+            document.getElementById('previewBubble').textContent = e.target.value;
+        });
+
+        // Carica dati esistenti
+        async function loadChatbot() {
+            try {
+                const res = await fetch(`/api/gyms/${gymId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('greeting').value = data.chatbot_greeting || '';
+                    document.getElementById('tone').value = data.chatbot_tone || 'amichevole';
+                    document.getElementById('previewBubble').textContent = data.chatbot_greeting || '';
+                }
+            } catch (err) {
+                console.error('Errore caricamento:', err);
+            }
+        }
+
+        // Salva personalizzazione
+        document.getElementById('chatbotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                chatbot_greeting: document.getElementById('greeting').value,
+                chatbot_tone: document.getElementById('tone').value
+            };
+
+            try {
+                const res = await fetch(`/api/gyms/${gymId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert('✅ Salvato con successo!');
+                }
+            } catch (err) {
+                alert('Errore durante il salvataggio');
+            }
+        });
+
+        loadChatbot();
+    </script>
+</body>
+
+</html>

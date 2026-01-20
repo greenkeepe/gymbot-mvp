@@ -48,6 +48,20 @@ app.get('/debug', async (req, res) => {
     });
 });
 
+// Import API handlers
+const { getGym, updateGym, createGym } = require('./api/gyms');
+const { createBooking, getBookings, cancelBooking } = require('./api/bookings');
+
+// Gym API routes
+app.get('/api/gyms/:id', getGym);
+app.put('/api/gyms/:id', updateGym);
+app.post('/api/gyms', createGym);
+
+// Booking API routes
+app.post('/api/bookings', createBooking);
+app.get('/api/bookings/:gymId', getBookings);
+app.delete('/api/bookings/:id', cancelBooking);
+
 app.post('/api/chat', async (req, res) => {
     const { message, userId } = req.body;
 

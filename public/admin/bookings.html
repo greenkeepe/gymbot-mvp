@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymBot Admin - Prenotazioni</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .nav {
+            margin-bottom: 30px;
+        }
+
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 600;
+        }
+
+        .booking-list {
+            margin-top: 20px;
+        }
+
+        .booking-item {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .booking-item.pending {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .booking-item.confirmed {
+            border-left: 4px solid #10b981;
+        }
+
+        .booking-item.cancelled {
+            border-left: 4px solid #ef4444;
+            opacity: 0.6;
+        }
+
+        .booking-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .booking-info p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.confirmed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .btn-cancel {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .filter {
+            margin-bottom: 20px;
+        }
+
+        .filter input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="settings.html">⚙️ Impostazioni</a>
+            <a href="chatbot.html">🤖 Chatbot</a>
+            <a href="bookings.html">📅 Prenotazioni</a>
+            <a href="/">💬 Chat</a>
+        </div>
+
+        <h1>📅 Prenotazioni</h1>
+
+        <div class="filter">
+            <input type="date" id="filterDate">
+            <select id="filterStatus">
+                <option value="">Tutti gli stati</option>
+                <option value="pending">In attesa</option>
+                <option value="confirmed">Confermata</option>
+                <option value="cancelled">Cancellata</option>
+            </select>
+        </div>
+
+        <div class="booking-list" id="bookingList">
+            <p>Caricamento...</p>
+        </div>
+    </div>
+
+    <script>
+        const gymId = localStorage.getItem('gymId') || 'demo-gym-id';
+
+        async function loadBookings() {
+            const date = document.getElementById('filterDate').value;
+            const status = document.getElementById('filterStatus').value;
+
+            let url = `/api/bookings/${gymId}?`;
+            if (date) url += `date=${date}&`;
+            if (status) url += `status=${status}`;
+
+            try {
+                const res = await fetch(url);
+                const bookings = await res.json();
+
+                const list = document.getElementById('bookingList');
+
+                if (bookings.length === 0) {
+                    list.innerHTML = '<p>Nessuna prenotazione trovata.</p>';
+                    return;
+                }
+
+                list.innerHTML = bookings.map(b => `
+                    <div class="booking-item ${b.status}">
+                        <div class="booking-info">
+                            <h3>${b.customer_name}</h3>
+                            <p>📞 ${b.customer_phone}</p>
+                            ${b.customer_email ? `<p>📧 ${b.customer_email}</p>` : ''}
+                        </div>
+                        <div class="booking-info">
+                            <h3>📅 ${new Date(b.booking_date).toLocaleDateString('it-IT')}</h3>
+                            <p>🕐 ${b.booking_time} (${b.duration} min)</p>
+                        </div>
+                        <div>
+                            <span class="status-badge ${b.status}">
+                                ${b.status === 'pending' ? '⏳ In attesa' :
+                        b.status === 'confirmed' ? '✅ Confermata' : '❌ Cancellata'}
+                            </span>
+                        </div>
+                        <div>
+                            ${b.status !== 'cancelled' ?
+                        `<button class="btn-cancel" onclick="cancelBooking('${b.id}')">Cancella</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Errore caricamento:', err);
+                document.getElementById('bookingList').innerHTML = '<p>Errore nel caricamento delle prenotazioni.</p>';
+            }
+        }
+
+        async function cancelBooking(id) {
+            if (!confirm('Sei sicuro di voler cancellare questa prenotazione?')) return;
+
+            try {
+                const res = await fetch(`/api/bookings/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadBookings();
+                }
+            } catch (err) {
+                alert('Errore durante la cancellazione');
+            }
+        }
+
+        document.getElementById('filterDate').addEventListener('change', loadBookings);
+        document.getElementById('filterStatus').addEventListener('change', loadBookings);
+
+        loadBookings();
+    </script>
+</body>
+
+</html>
