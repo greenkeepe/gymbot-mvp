@@ -11,7 +11,7 @@ const chatHistory = {};
 async function replyToMessage(userId, userMessage) {
     // Inizializza cronologia se nuovo utente
     if (!chatHistory[userId]) {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         chatHistory[userId] = model.startChat({
             history: [
                 {
