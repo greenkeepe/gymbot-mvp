@@ -195,11 +195,15 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/admin/supabase-init.js"></script>
     <script>
         const gymId = localStorage.getItem('gymId');
 
 
         async function loadCourses() {
+            const sb = await initSupabase();
+            if (!sb) return;
             const { data: gym } = await sb.from('gyms').select('courses').eq('id', gymId).single();
             const courses = gym?.courses || [];
 

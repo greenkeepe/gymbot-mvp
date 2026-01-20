@@ -240,6 +240,8 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/admin/supabase-init.js"></script>
     <script>
         const gymId = localStorage.getItem('gymId');
 
@@ -247,6 +249,8 @@
         let currentTab = 'staff';
 
         async function loadPeople() {
+            const sb = await initSupabase();
+            if (!sb) return;
             const { data: gym } = await sb.from('gyms').select('staff, trainers').eq('id', gymId).single();
             const people = currentTab === 'staff' ? (gym?.staff || []) : (gym?.trainers || []);
 
@@ -283,7 +287,8 @@
 
         document.getElementById('personForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
+            const sb = await initSupabase();
+            if (!sb) return;
             const type = document.getElementById('personType').value;
             const { data: gym } = await sb.from('gyms').select('staff, trainers').eq('id', gymId).single();
 

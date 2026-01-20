@@ -202,11 +202,15 @@
         </button>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/admin/supabase-init.js"></script>
     <script>
         const gymId = localStorage.getItem('gymId');
 
 
         async function loadPricing() {
+            const sb = await initSupabase();
+            if (!sb) return;
             const { data: gym } = await sb.from('gyms').select('pricing').eq('id', gymId).single();
             const pricing = gym?.pricing || {};
 
@@ -226,6 +230,8 @@
         }
 
         async function savePricing() {
+            const sb = await initSupabase();
+            if (!sb) return;
             const pricing = {
                 membership: {
                     monthly: parseFloat(document.getElementById('monthlyInput').value),
