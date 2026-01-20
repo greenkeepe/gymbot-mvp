@@ -62,6 +62,14 @@ app.post('/api/bookings', createBooking);
 app.get('/api/bookings/:gymId', getBookings);
 app.delete('/api/bookings/:id', cancelBooking);
 
+// Config endpoint to serve Supabase credentials
+app.get('/api/config', (req, res) => {
+    res.json({
+        supabaseUrl: process.env.SUPABASE_URL || 'https://vyspmhrbgaxvmkaqrrfo.supabase.co',
+        supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ''
+    });
+});
+
 app.post('/api/chat', async (req, res) => {
     const { message, userId } = req.body;
 
