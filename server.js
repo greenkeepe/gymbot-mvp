@@ -33,7 +33,7 @@ module.exports = app;
 
 // Only start listener if running directly (local dev)
 if (require.main === module) {
-    app.listen(port, () => {
-        console.log(`GymBot Web Server listening at http://localhost:${port}`);
+    app.listen(port, '0.0.0.0', () => {
+        console.log(`GymBot Web Server listening at http://0.0.0.0:${port}`);
     });
 }
