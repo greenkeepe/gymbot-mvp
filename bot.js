@@ -1,9 +1,11 @@
 require('dotenv').config();
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Groq = require("groq-sdk");
 const { SYSTEM_PROMPT } = require('./systemPrompt');
 
-// Configura qui la tua chiave API o usa .env
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'INSERISCI_LA_TUA_KEY_GEMINI_QUI');
+// Configura Groq
+const groq = new Groq({
+    apiKey: process.env.GROQ_API_KEY || 'INSERISCI_LA_TUA_KEY_GROQ_QUI'
+});
 
 // Mantiene la cronologia per la demo (in produzione usa un DB)
 const chatHistory = {};
@@ -11,29 +13,30 @@ const chatHistory = {};
 async function replyToMessage(userId, userMessage) {
     // Inizializza cronologia se nuovo utente
     if (!chatHistory[userId]) {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        chatHistory[userId] = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{ text: SYSTEM_PROMPT }],
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Ok, ho capito il mio ruolo. Sono GymBot." }],
-                },
-            ],
-        });
+        chatHistory[userId] = [
+            { role: "system", content: SYSTEM_PROMPT }
+        ];
     }
 
+    // Aggiungi messaggio utente
+    chatHistory[userId].push({ role: "user", content: userMessage });
+
     try {
-        const chat = chatHistory[userId];
-        const result = await chat.sendMessage(userMessage);
-        const botResponse = result.response.text();
+        const completion = await groq.chat.completions.create({
+            messages: chatHistory[userId],
+            model: "llama3-70b-8192", // Modello molto potente e veloce
+            temperature: 0.7,
+            max_tokens: 1024,
+        });
+
+        const botResponse = completion.choices[0]?.message?.content || "Non so cosa rispondere.";
+
+        // Aggiungi risposta bot alla storia
+        chatHistory[userId].push({ role: "assistant", content: botResponse });
 
         return botResponse;
     } catch (error) {
-        console.error("Errore Gemini:", error);
+        console.error("Errore Groq:", error);
         return "Scusami, ho un problema tecnico momentaneo. Riprova tra poco!";
     }
 }
