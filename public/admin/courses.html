@@ -224,6 +224,9 @@
         document.getElementById('courseForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            const sb = await initSupabase();
+            if (!sb) return;
+
             const { data: gym } = await sb.from('gyms').select('courses').eq('id', gymId).single();
             const courses = gym?.courses || [];
 
