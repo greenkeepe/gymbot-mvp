@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Corsi - GymBot Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="dashboard.html">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: #1a1a1a;
+            color: white;
+            padding: 30px 0;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .logo {
+            padding: 0 30px 30px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: 1.5em;
+            color: #667eea;
+        }
+
+        .nav-item {
+            padding: 15px 30px;
+            color: #aaa;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .course-card {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .course-card h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+        }
+
+        .course-card p {
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <h1>🤖 GymBot</h1>
+        </div>
+        <a href="dashboard.html" class="nav-item">📊 Dashboard</a>
+        <a href="settings.html" class="nav-item">⚙️ Impostazioni</a>
+        <a href="courses.html" class="nav-item active">🏋️ Corsi</a>
+        <a href="staff.html" class="nav-item">👥 Staff & Trainer</a>
+        <a href="pricing.html" class="nav-item">💰 Prezzi</a>
+        <a href="calendar.html" class="nav-item">📅 Calendario</a>
+        <a href="bookings.html" class="nav-item">📋 Prenotazioni</a>
+        <a href="chatbot.html" class="nav-item">🤖 Chatbot</a>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2>Gestione Corsi</h2>
+            <button class="btn" onclick="openModal()">+ Aggiungi Corso</button>
+        </div>
+
+        <div class="courses-grid" id="coursesList"></div>
+    </div>
+
+    <div class="modal" id="courseModal">
+        <div class="modal-content">
+            <h2>Nuovo Corso</h2>
+            <form id="courseForm">
+                <div class="form-group">
+                    <label>Nome Corso</label>
+                    <input type="text" id="courseName" required>
+                </div>
+                <div class="form-group">
+                    <label>Descrizione</label>
+                    <textarea id="courseDesc"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Durata (minuti)</label>
+                    <input type="number" id="courseDuration" value="60">
+                </div>
+                <div class="form-group">
+                    <label>Prezzo (€)</label>
+                    <input type="number" id="coursePrice" value="15">
+                </div>
+                <button type="submit" class="btn">Salva</button>
+                <button type="button" class="btn" onclick="closeModal()" style="background: #ccc;">Annulla</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const gymId = localStorage.getItem('gymId');
+        const SUPABASE_URL = 'https://vyspmhrbgaxvmkaqrrfo.supabase.co';
+        const SUPABASE_ANON_KEY = 'YOUR_KEY';
+        const { createClient } = supabase;
+        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function loadCourses() {
+            const { data: gym } = await sb.from('gyms').select('courses').eq('id', gymId).single();
+            const courses = gym?.courses || [];
+
+            document.getElementById('coursesList').innerHTML = courses.map(c => `
+                <div class="course-card">
+                    <h3>${c.name}</h3>
+                    <p>${c.description}</p>
+                    <p><strong>Durata:</strong> ${c.duration} min</p>
+                    <p><strong>Prezzo:</strong> €${c.price}</p>
+                </div>
+            `).join('');
+        }
+
+        function openModal() {
+            document.getElementById('courseModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('courseModal').style.display = 'none';
+        }
+
+        document.getElementById('courseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const { data: gym } = await sb.from('gyms').select('courses').eq('id', gymId).single();
+            const courses = gym?.courses || [];
+
+            courses.push({
+                id: Date.now(),
+                name: document.getElementById('courseName').value,
+                description: document.getElementById('courseDesc').value,
+                duration: parseInt(document.getElementById('courseDuration').value),
+                price: parseFloat(document.getElementById('coursePrice').value)
+            });
+
+            await sb.from('gyms').update({ courses }).eq('id', gymId);
+            closeModal();
+            loadCourses();
+        });
+
+        loadCourses();
+    </script>
+</body>
+
+</html>
